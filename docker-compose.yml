@@ -1,23 +1,35 @@
-version: '3.8'
+version: "3.8"
 
 services:
   mosquitto:
-    image: eclipse-mosquitto:latest
+    image: eclipse-mosquitto:2
     ports:
-      - "51883:1883"  # MQTT default port
+      - "51883:1883" # MQTT default port
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
     restart: always
     healthcheck:
-      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
+      test:
+        [
+          "CMD",
+          "mosquitto_sub",
+          "-t",
+          "$$SYS/#",
+          "-C",
+          "1",
+          "-i",
+          "healthcheck",
+          "-W",
+          "3",
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
 
   postgres:
-    image: postgres:latest
+    image: postgres:18
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -25,7 +37,7 @@ services:
     ports:
       - "55432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -34,17 +46,17 @@ services:
       retries: 5
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:4-management
     ports:
-      - "55672:5672"    # AMQP protocol port
-      - "55673:15672"  # Management UI port
+      - "55672:5672" # AMQP protocol port
+      - "55673:15672" # Management UI port
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: always
-  
+
   delta-helper:
     image: europe-west3-docker.pkg.dev/nano-green-1/public/backend-home-assignment-helper:latest
     environment:
