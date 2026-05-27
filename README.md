@@ -2,7 +2,7 @@
 
 ## Overview
 
-In this home assignment you are required to create a data pipeline which collects data from electrical cars and inputs them into the database.
+In this home assignment you are required to create a data pipeline which collects data from electric cars and inputs them into the database.
 
 The data are coming from an MQTT broker and your task is to feed them through a RabbitMQ queue into a Postgres database.
 
@@ -44,13 +44,13 @@ speed           double precision
 
 Finish files `collector.ts` and `writer.ts` in the `src` directory of this repo.
 
-The collector should be able to take data from the MQTT broker and put them into an appropriate RabbitMQ queue. **Be aware that the data may be coming out of sync**. The gear is sent only when the driver changes it, speed is sometimes delayed and the battery info can be missing or come only for one battery at a time. Be sure to deal with this fact appropriately in a way the timeseries of the data in the database doesn't have missing time points.
+The collector should be able to take data from the MQTT broker and put them into an appropriate RabbitMQ queue. **Be aware that the data may be coming out of sync**. The gear is sent only when the driver changes it, speed is sometimes delayed and the battery info can be missing or come only for one battery at a time. Be sure to deal with this fact appropriately in a way the timeseries of the data in the database doesn't have missing **time** points and the granularity of the data is kept as required. However, it is important to realize that you are working with an external unstable data source and if it stops sending data we must be able to eventually recognize it.
 
 Next, the writer should take the data from the RabbitMQ queue and insert them into the given database table.
 
-At the end of the process the database should contain rows with **5 second granularity** of the car's data for the given timestamp. Moreover, in the database we want the gear to be an integer with values (0-6, where N=0), speed to be in km/h and have only one state of charge. The overall state of charge should be computed as a weighted average of the underlying state of charge weighted by the batteries` capacity.
+At the end of the process the database should contain rows with **5 second granularity** of the car's data for the given timestamp. Moreover, in the database we want the gear to be an integer with values (0-6, where N=0), speed to be in km/h and have only one state of charge percentage. The overall state of charge should be computed as a weighted average of the underlying state of charge weighted by the batteries` capacity.
 
-For this task you should work only with one car with id `1`. It has two batteries and you can assume their capacity doesn't change (upon reading it from the MQTT topic you can save it in the code as a constant).
+For this task you should work only with one car with id `1`. It has two batteries and you can assume their capacity doesn't change (upon reading it from the MQTT topic you can save it in the code as a constant). In more realistic scenario both the car id and its constant properties such as battery capacity would come from an external database.
 
 ## Finishing the assignment
 
