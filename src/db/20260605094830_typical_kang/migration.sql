@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "car_state_car_id_time_idx" ON "car_state" ("car_id","time");
