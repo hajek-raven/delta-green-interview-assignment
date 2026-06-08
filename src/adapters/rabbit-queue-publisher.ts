@@ -5,7 +5,9 @@ import type { SnapshotPublisher } from "../contracts/queue";
 import { publishConfirmed, runRabbit, type RabbitHandle } from "../lib/rabbit";
 import type { RabbitPublisherConfig } from "./rabbit-config";
 
-export function createRabbitSnapshotPublisher(config: RabbitPublisherConfig): SnapshotPublisher {
+export function createRabbitSnapshotPublisher(
+  config: RabbitPublisherConfig,
+): SnapshotPublisher {
   let channel: ConfirmChannel | null = null;
   let rabbit: RabbitHandle | null = null;
 
@@ -14,6 +16,7 @@ export function createRabbitSnapshotPublisher(config: RabbitPublisherConfig): Sn
     onChannel: async (ch) => {
       await ch.assertQueue(config.queue, { durable: true });
       channel = ch;
+      console.log(`Connected to RabbitMQ, publishing to ${config.queue}`);
     },
     onLost: () => {
       channel = null;

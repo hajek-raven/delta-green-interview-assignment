@@ -1,9 +1,16 @@
 import { createDrizzleSnapshotStore } from "./adapters/drizzle-snapshot-store";
 import { createRabbitSnapshotConsumer } from "./adapters/rabbit-queue-consumer";
-import { insertFailedReason } from "./contracts/queue";
-import { DLQ, MAX_ATTEMPTS, QUEUE, RETRY_DELAY_MS, RETRY_QUEUE } from "./lib/config";
+import { ensureDbSetup } from "./db/setup";
+import {
+  DLQ,
+  MAX_ATTEMPTS,
+  QUEUE,
+  RETRY_DELAY_MS,
+  RETRY_QUEUE,
+} from "./lib/config";
 import { RABBITMQ_URL } from "./lib/env";
 import { onShutdown } from "./lib/shutdown";
+import { createWriter } from "./services/writer";
 
 main().catch((error) => {
   console.error(error);
@@ -11,6 +18,8 @@ main().catch((error) => {
 });
 
 async function main() {
+  await ensureDbSetup();
+
   const store = createDrizzleSnapshotStore();
   const consumer = createRabbitSnapshotConsumer({
     url: RABBITMQ_URL,
@@ -20,23 +29,14 @@ async function main() {
     retryDelayMs: RETRY_DELAY_MS,
     maxAttempts: MAX_ATTEMPTS,
   });
-
-  onShutdown(async () => {
-    await consumer.close();
-    await store.close();
+  const writer = createWriter({
+    consumer,
+    store,
+    maxAttempts: MAX_ATTEMPTS,
+    retryDelayMs: RETRY_DELAY_MS,
   });
 
-  await consumer.run(async (snapshot, { attempt }) => {
-    try {
-      await store.insert(snapshot);
-      return { kind: "ack" };
-    } catch (error) {
-      if (attempt >= MAX_ATTEMPTS) {
-        console.error(`Insert failed ${attempt}x -> DLQ`, error);
-        return { kind: "deadLetter", reason: insertFailedReason(error) };
-      }
-      console.error(`Insert failed (attempt ${attempt}) -> retry in ${RETRY_DELAY_MS}ms`, error);
-      return { kind: "retry" };
-    }
-  });
+  onShutdown(() => writer.stop());
+
+  await writer.run();
 }

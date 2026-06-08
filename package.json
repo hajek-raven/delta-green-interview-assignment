@@ -4,7 +4,7 @@
   "scripts": {
     "collector": "bun src/collector.ts",
     "writer": "bun src/writer.ts",
-    "all": "bun src/collector.ts && bun src/writer.ts",
+    "all": "bun run --bun --parallel collector writer",
     "db:generate": "bun --bun drizzle-kit generate",
     "db:push": "bun --bun drizzle-kit push",
     "db:migrate": "bun --bun drizzle-kit migrate",

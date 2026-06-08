@@ -10,7 +10,9 @@ import type { SnapshotConsumer } from "../contracts/queue";
 import { publishConfirmed, runRabbit, type RabbitHandle } from "../lib/rabbit";
 import type { RabbitConsumerConfig } from "./rabbit-config";
 
-export function createRabbitSnapshotConsumer(config: RabbitConsumerConfig): SnapshotConsumer {
+export function createRabbitSnapshotConsumer(
+  config: RabbitConsumerConfig,
+): SnapshotConsumer {
   let inFlight: Promise<void> = Promise.resolve();
   let consumer: { channel: ConfirmChannel; tag: string } | null = null;
   let rabbit: RabbitHandle | null = null;
@@ -27,11 +29,14 @@ export function createRabbitSnapshotConsumer(config: RabbitConsumerConfig): Snap
         onChannel: async (channel) => {
           await setupTopology(channel, config);
           await channel.prefetch(1);
-          const { consumerTag } = await channel.consume(config.queue, (message) => {
-            inFlight = processMessage(channel, message, handler, config);
-          });
+          const { consumerTag } = await channel.consume(
+            config.queue,
+            (message) => {
+              inFlight = processMessage(channel, message, handler, config);
+            },
+          );
           consumer = { channel, tag: consumerTag };
-          console.log(`Writing messages from ${config.queue}`);
+          console.log(`Connected to RabbitMQ, consuming from ${config.queue}`);
         },
         onLost: () => {
           consumer = null;
@@ -55,7 +60,10 @@ export function createRabbitSnapshotConsumer(config: RabbitConsumerConfig): Snap
   };
 }
 
-async function setupTopology(channel: ConfirmChannel, config: RabbitConsumerConfig) {
+async function setupTopology(
+  channel: ConfirmChannel,
+  config: RabbitConsumerConfig,
+) {
   await channel.assertQueue(config.queue, { durable: true });
   await channel.assertQueue(config.dlq, { durable: true });
   await channel.assertQueue(config.retryQueue, {
@@ -121,7 +129,10 @@ async function applyOutcome(
     await dispatchOutcome(channel, message, outcome, config, processingError);
     channel.ack(message);
   } catch (publishError) {
-    console.error("Failed to route message to retry/DLQ, requeueing", publishError);
+    console.error(
+      "Failed to route message to retry/DLQ, requeueing",
+      publishError,
+    );
     try {
       channel.nack(message, false, true);
     } catch {

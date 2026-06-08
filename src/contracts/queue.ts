@@ -11,10 +11,6 @@ export type DeliveryMeta = {
   readonly attempt: number;
 };
 
-export function insertFailedReason(error: unknown): `insert_failed:${string}` {
-  return `insert_failed:${String(error)}`;
-}
-
 export interface QueuePublisher<TMessage> {
   publish(message: TMessage): Promise<void>;
   close(): Promise<void>;
